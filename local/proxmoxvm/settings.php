@@ -154,5 +154,12 @@ if ($hassiteconfig) {
             get_string('enableconsole_desc', 'local_proxmoxvm'),
             1
         ));
+        $settings->add(new admin_setting_configtext(
+            'local_proxmoxvm/consolewspath',
+            get_string('consolewspath', 'local_proxmoxvm'),
+            get_string('consolewspath_desc', 'local_proxmoxvm'),
+            '/pvews',
+            PARAM_RAW_TRIMMED
+        ));
     }
 }

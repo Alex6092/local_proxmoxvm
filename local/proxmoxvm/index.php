@@ -123,6 +123,7 @@ if ($action && confirm_sesskey()) {
 $vms = vm_manager::get_user_vms($USER->id);
 $sshuser = trim((string) get_config('local_proxmoxvm', 'sshuser'));
 $snapquota = (int) get_config('local_proxmoxvm', 'snapshotquota');
+$consoleenabled = (bool) get_config('local_proxmoxvm', 'enableconsole');
 
 $vmcontext = [];
 foreach ($vms as $vm) {
@@ -174,6 +175,8 @@ foreach ($vms as $vm) {
         'snaperror' => $snaperror,
         'quotareached' => ($snapquota > 0 && count($snaps) >= $snapquota),
         'canreset' => $canreset,
+        'canconsole' => $consoleenabled && $isrunning,
+        'consoleurl' => (new moodle_url('/local/proxmoxvm/console.php', ['id' => $vm->id]))->out(false),
     ];
 }
 

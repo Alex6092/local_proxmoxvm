@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<libraries>
+    <library>
+        <location>thirdparty/novnc</location>
+        <name>noVNC</name>
+        <description>HTML5 VNC client used to render the VM console.</description>
+        <version>1.5.0</version>
+        <license>MPL-2.0</license>
+        <licenseversion>2.0</licenseversion>
+    </library>
+</libraries>

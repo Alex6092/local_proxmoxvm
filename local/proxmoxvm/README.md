@@ -140,6 +140,63 @@ nœuds »). Correctif : ajouter `Sys.Audit` au rôle et accorder le rôle **au j
 > Les restaurations de snapshot s'exécutent en **tâche de fond** (arrêt → restauration →
 > redémarrage) via le cron Moodle ; les autres actions sont immédiates.
 
-## Limites connues
+## Console intégrée (M3)
 
-- Console intégrée (noVNC) → **M3**.
+**Architecture** — le navigateur ne parle **qu'à Moodle** ; Proxmox n'est jamais exposé.
+Le navigateur ouvre un websocket vers un chemin **même origine** de Moodle (par défaut
+`/pvews`), que ton serveur web **relaie vers le `vncwebsocket` de Proxmox en injectant le
+token API**. Le ticket VNC est généré par Moodle **uniquement pour la VM de l'étudiant**
+(vérification d'appartenance), et le proxy est **restreint au seul chemin `vncwebsocket`**.
+
+### 1. Déposer noVNC dans le plugin
+
+```bash
+cd .../public/local/proxmoxvm/thirdparty
+git clone --depth 1 --branch v1.5.0 https://github.com/novnc/noVNC.git novnc
+# => .../thirdparty/novnc/core/rfb.js doit exister (conserver core/ ET vendor/)
+```
+
+### 2. Reverse proxy sur le serveur web de Moodle
+
+Remplace `TON_SECRET` (secret du token) et `172.29.255.1` (ton nœud principal).
+⚠️ **Garde la regex restreinte** au chemin `vncwebsocket` — sinon le token injecté
+deviendrait exploitable pour toute l'API. Protège la conf (lisible par root uniquement).
+
+**nginx** — dans le bloc `server { }` HTTPS de Moodle :
+
+```nginx
+location ~ ^/pvews/(nodes/[^/]+/qemu/[0-9]+/vncwebsocket)$ {
+    proxy_pass https://172.29.255.1:8006/api2/json/$1$is_args$args;
+    proxy_http_version 1.1;
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection "upgrade";
+    proxy_set_header Host 172.29.255.1:8006;
+    proxy_set_header Authorization "PVEAPIToken=moodle@pve!moodleAPI=TON_SECRET";
+    proxy_ssl_verify off;
+    proxy_read_timeout 3600s;
+    proxy_send_timeout 3600s;
+}
+```
+
+**Apache** — `a2enmod proxy proxy_http proxy_wstunnel headers ssl` :
+
+```apache
+SSLProxyEngine on
+SSLProxyVerify none
+SSLProxyCheckPeerName off
+<LocationMatch "^/pvews/nodes/[^/]+/qemu/[0-9]+/vncwebsocket$">
+    RequestHeader set Authorization "PVEAPIToken=moodle@pve!moodleAPI=TON_SECRET"
+</LocationMatch>
+ProxyPassMatch "^/pvews/(nodes/[^/]+/qemu/[0-9]+/vncwebsocket)$" "wss://172.29.255.1:8006/api2/json/$1"
+```
+
+### 3. Côté plugin
+
+- Le token doit avoir le privilège **VM.Console** (déjà dans le rôle plus haut).
+- Réglages : **Activer la console intégrée** coché, **Chemin websocket** = `/pvews`
+  (doit correspondre au proxy).
+- Un bouton **Ouvrir la console** apparaît sur la VM (quand elle est allumée).
+
+> Pas de mot de passe PVE ni d'exposition de Proxmox : l'auth se fait via le token injecté
+> par le proxy, et le ticket VNC est limité à la VM de l'étudiant. La console fonctionne
+> partout où l'étudiant joint Moodle (Moodle relaie en interne vers Proxmox).

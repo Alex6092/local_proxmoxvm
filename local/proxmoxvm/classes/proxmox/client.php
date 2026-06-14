@@ -231,6 +231,21 @@ class client {
         return (array) $this->call('GET', "/nodes/{$node}/qemu/{$vmid}/agent/network-get-interfaces");
     }
 
+    /**
+     * Open a VNC proxy session for a VM in websocket mode.
+     *
+     * Must be called on the node that hosts the VM.
+     *
+     * @param string $node
+     * @param int $vmid
+     * @return array Includes 'ticket' (also the RFB password) and 'port'.
+     */
+    public function vncproxy(string $node, int $vmid): array {
+        return (array) $this->call('POST', "/nodes/{$node}/qemu/{$vmid}/vncproxy", [
+            'websocket' => 1,
+        ]);
+    }
+
     // -- Snapshots. -----------------------------------------------------------
 
     /**

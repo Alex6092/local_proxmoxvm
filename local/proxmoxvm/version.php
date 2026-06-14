@@ -25,7 +25,7 @@
 defined('MOODLE_INTERNAL') || die();
 
 $plugin->component = 'local_proxmoxvm';
-$plugin->version   = 2026061502;        // YYYYMMDDXX.
+$plugin->version   = 2026061503;        // YYYYMMDDXX.
 $plugin->requires  = 2026042000;        // Moodle 5.2 (branch 502).
 $plugin->maturity  = MATURITY_ALPHA;
-$plugin->release   = '0.2.2 (M2 - snapshot form UX)';
+$plugin->release   = '0.3.0 (M3 - integrated noVNC console)';

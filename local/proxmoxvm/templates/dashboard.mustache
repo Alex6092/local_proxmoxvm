@@ -83,6 +83,12 @@
                         </div>
                     {{/canreset}}
 
+                    {{#canconsole}}
+                        <div class="mt-3">
+                            <a class="btn btn-outline-info" href="{{consoleurl}}" target="_blank" rel="noopener">{{#str}}openconsole, local_proxmoxvm{{/str}}</a>
+                        </div>
+                    {{/canconsole}}
+
                     <hr>
                     <h4>{{#str}}snapshots, local_proxmoxvm{{/str}}</h4>
 

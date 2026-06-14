@@ -431,6 +431,24 @@ class vm_manager {
     }
 
     /**
+     * Mint a VNC console ticket for a VM. The caller MUST have verified that the
+     * record belongs to the current user.
+     *
+     * @param \stdClass $record
+     * @return array{ticket: string, port: int, node: string, vmid: int}
+     */
+    public static function console_ticket(\stdClass $record): array {
+        $client = new client();
+        $data = $client->vncproxy($record->node, (int) $record->vmid);
+        return [
+            'ticket' => (string) ($data['ticket'] ?? ''),
+            'port' => (int) ($data['port'] ?? 0),
+            'node' => (string) $record->node,
+            'vmid' => (int) $record->vmid,
+        ];
+    }
+
+    /**
      * Refresh cached status and IP for a record (used by the reconcile task).
      *
      * @param \stdClass $record

@@ -140,3 +140,15 @@ $string['errorreservedname'] = 'This snapshot name is reserved. Please choose an
 $string['resetqueued'] = 'Reset started in the background. The VM will be restored and restarted.';
 $string['resetvm'] = 'Reset the VM';
 $string['resetvm_help'] = 'Restores the VM to its initial state (useful if it no longer boots). Your changes will be lost.';
+
+// M3 - integrated console.
+$string['console_authfailed'] = 'Console authentication failed.';
+$string['console_connected'] = 'Connected';
+$string['console_connecting'] = 'Connecting...';
+$string['console_ctrlaltdel'] = 'Ctrl+Alt+Del';
+$string['console_disconnected'] = 'Disconnected';
+$string['console_title'] = 'Console - {$a}';
+$string['consolewspath'] = 'Console websocket path';
+$string['consolewspath_desc'] = 'Same-origin path that your web server reverse-proxies to the Proxmox vncwebsocket endpoint (injecting the API token). Must match your web server configuration. Default: /pvews';
+$string['errorconsoledisabled'] = 'The integrated console is disabled.';
+$string['openconsole'] = 'Open console';
