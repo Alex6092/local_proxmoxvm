@@ -19,6 +19,7 @@
         <FIELD NAME="ipaddress" TYPE="char" LENGTH="64" NOTNULL="false" SEQUENCE="false" COMMENT="Cached guest-agent IPv4."/>
         <FIELD NAME="statuschecked" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false" COMMENT="Last status refresh time."/>
         <FIELD NAME="lasterror" TYPE="text" NOTNULL="false" SEQUENCE="false" COMMENT="Last provisioning error message."/>
+        <FIELD NAME="cipassword" TYPE="text" NOTNULL="false" SEQUENCE="false" COMMENT="Encrypted per-VM cloud-init password (core encryption)."/>
         <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
         <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
       </FIELDS>

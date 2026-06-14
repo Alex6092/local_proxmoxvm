@@ -58,6 +58,16 @@
                             <dt class="col-sm-3">{{#str}}field_ssh, local_proxmoxvm{{/str}}</dt>
                             <dd class="col-sm-9"><code>{{sshhint}}</code></dd>
                         {{/sshhint}}
+
+                        {{#haspassword}}
+                            <dt class="col-sm-3">{{#str}}field_password, local_proxmoxvm{{/str}}</dt>
+                            <dd class="col-sm-9">
+                                <details>
+                                    <summary>{{#str}}showpassword, local_proxmoxvm{{/str}}</summary>
+                                    <code>{{password}}</code>
+                                </details>
+                            </dd>
+                        {{/haspassword}}
                     </dl>
 
                     <form method="post" action="{{actionurl}}" class="d-inline">

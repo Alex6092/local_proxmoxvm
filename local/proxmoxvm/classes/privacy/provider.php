@@ -50,6 +50,7 @@ class provider implements
             'vmid'        => 'privacy:metadata:local_proxmoxvm:vmid',
             'node'        => 'privacy:metadata:local_proxmoxvm:node',
             'ipaddress'   => 'privacy:metadata:local_proxmoxvm:ipaddress',
+            'cipassword'  => 'privacy:metadata:local_proxmoxvm:cipassword',
             'timecreated' => 'privacy:metadata:local_proxmoxvm:timecreated',
         ], 'privacy:metadata:local_proxmoxvm');
 

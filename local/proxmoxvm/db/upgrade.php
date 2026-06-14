@@ -15,7 +15,7 @@
 // along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
 
 /**
- * Plugin version and metadata.
+ * Database upgrade steps.
  *
  * @package    local_proxmoxvm
  * @copyright  2026 Alexandre Gremont
@@ -24,8 +24,24 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->component = 'local_proxmoxvm';
-$plugin->version   = 2026061504;        // YYYYMMDDXX.
-$plugin->requires  = 2026042000;        // Moodle 5.2 (branch 502).
-$plugin->maturity  = MATURITY_ALPHA;
-$plugin->release   = '0.4.0 (unique per-VM cloud-init password)';
+/**
+ * Upgrade the plugin database.
+ *
+ * @param int $oldversion
+ * @return bool
+ */
+function xmldb_local_proxmoxvm_upgrade($oldversion) {
+    global $DB;
+    $dbman = $DB->get_manager();
+
+    if ($oldversion < 2026061504) {
+        $table = new xmldb_table('local_proxmoxvm');
+        $field = new xmldb_field('cipassword', XMLDB_TYPE_TEXT, null, null, null, null, null, 'lasterror');
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+        upgrade_plugin_savepoint(true, 2026061504, 'local', 'proxmoxvm');
+    }
+
+    return true;
+}

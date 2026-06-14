@@ -200,3 +200,20 @@ ProxyPassMatch "^/pvews/(nodes/[^/]+/qemu/[0-9]+/vncwebsocket)$" "wss://172.29.2
 > Pas de mot de passe PVE ni d'exposition de Proxmox : l'auth se fait via le token injecté
 > par le proxy, et le ticket VNC est limité à la VM de l'étudiant. La console fonctionne
 > partout où l'étudiant joint Moodle (Moodle relaie en interne vers Proxmox).
+
+## Mot de passe unique par VM (cloud-init)
+
+Réglage **Définir un mot de passe unique par VM** (désactivé par défaut). Activé, chaque VM
+reçoit à sa création un mot de passe aléatoire (14 caractères, sans caractères ambigus),
+appliqué via **cloud-init `cipassword` avant le premier démarrage** — il est donc capturé
+dans le snapshot `initial`, et une **réinitialisation conserve le même mot de passe**. Il est
+stocké **chiffré** (API `\core\encryption` de Moodle, clé dans `moodledata/secret/`) et
+affiché à l'étudiant sur sa page (sous « Afficher le mot de passe »).
+
+Prérequis côté template :
+- template **cloud-init** avec un utilisateur par défaut (`ciuser`) — fais-le correspondre au
+  réglage *Nom d'utilisateur SSH* pour que l'indication `ssh user@ip` soit cohérente ;
+- pour un login SSH par mot de passe : **`PasswordAuthentication yes`** dans le sshd de la VM.
+
+> Les VM créées avant l'activation de l'option n'ont pas de mot de passe (rien n'est affiché) ;
+> seules les nouvelles VM en reçoivent un.

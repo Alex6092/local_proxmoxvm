@@ -168,12 +168,21 @@ class vm_manager {
             }
 
             // Step 2: configure resources and ensure the guest agent is on.
-            $client->set_config($record->node, (int) $record->vmid, [
+            $config = [
                 'cores'  => $cores,
                 'memory' => $memory,
                 'onboot' => 1,
                 'agent'  => 1,
-            ]);
+            ];
+
+            // Optional: set a unique cloud-init password (once), before first boot
+            // so it is applied by cloud-init AND captured in the initial snapshot
+            // (so a reset keeps the same password). Shown to the student.
+            if (get_config('local_proxmoxvm', 'setpassword')) {
+                $config['cipassword'] = self::ensure_password($record);
+            }
+
+            $client->set_config($record->node, (int) $record->vmid, $config);
 
             // Step 2b: protected initial snapshot for student self-reset (taken
             // while stopped, before first boot, so rollback is a clean reset).
@@ -478,6 +487,80 @@ class vm_manager {
     }
 
     // -- Helpers. -------------------------------------------------------------
+
+    /**
+     * Return the VM's password, generating and storing it (encrypted) once.
+     *
+     * @param \stdClass $record Updated in-place and in the DB on first generation.
+     * @return string Plaintext password.
+     */
+    protected static function ensure_password(\stdClass $record): string {
+        global $DB;
+        if (!empty($record->cipassword)) {
+            try {
+                return self::decrypt_password($record->cipassword);
+            } catch (\Throwable $e) {
+                // Key changed / corrupt: regenerate below.
+                $e = null;
+            }
+        }
+        $plain = self::generate_password();
+        $record->cipassword = self::encrypt_password($plain);
+        $record->timemodified = time();
+        $DB->update_record(self::TABLE, $record);
+        return $plain;
+    }
+
+    /**
+     * Decrypted password for display (empty string if none or undecryptable).
+     *
+     * @param \stdClass $record
+     * @return string
+     */
+    public static function get_password(\stdClass $record): string {
+        if (empty($record->cipassword)) {
+            return '';
+        }
+        try {
+            return self::decrypt_password($record->cipassword);
+        } catch (\Throwable $e) {
+            return '';
+        }
+    }
+
+    /**
+     * Generate a strong, easy-to-type password (no ambiguous characters).
+     *
+     * @param int $length
+     * @return string
+     */
+    protected static function generate_password(int $length = 14): string {
+        $alphabet = 'abcdefghijkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+        $maxidx = strlen($alphabet) - 1;
+        $password = '';
+        for ($i = 0; $i < $length; $i++) {
+            $password .= $alphabet[random_int(0, $maxidx)];
+        }
+        return $password;
+    }
+
+    /**
+     * Encrypt a password for storage (returns a storable "method:base64" string).
+     *
+     * @param string $plain
+     * @return string
+     */
+    protected static function encrypt_password(string $plain): string {
+        return \core\encryption::encrypt($plain);
+    }
+
+    /**
+     * @param string $stored
+     * @return string Plaintext password.
+     */
+    protected static function decrypt_password(string $stored): string {
+        return \core\encryption::decrypt($stored);
+    }
 
     /**
      * Build a DNS-friendly, traceable VM name for a user.

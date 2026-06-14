@@ -152,6 +152,7 @@ foreach ($vms as $vm) {
     $statuskey = in_array($vm->status, ['running', 'stopped'], true) ? $vm->status : 'unknown';
     $isrunning = ($vm->status === 'running');
     $ip = (string) ($vm->ipaddress ?? '');
+    $password = vm_manager::get_password($vm);
 
     $vmcontext[] = (object) [
         'id' => $vm->id,
@@ -169,6 +170,8 @@ foreach ($vms as $vm) {
         'ip' => $ip,
         'hasip' => $ip !== '',
         'sshhint' => ($ip !== '' && $sshuser !== '') ? "ssh {$sshuser}@{$ip}" : '',
+        'password' => $password,
+        'haspassword' => $password !== '',
         'lasterror' => $vm->lasterror,
         'snapshots' => $snaps,
         'hassnapshots' => !empty($snaps),

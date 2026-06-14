@@ -104,6 +104,12 @@ if ($hassiteconfig) {
             get_string('autostart_desc', 'local_proxmoxvm'),
             1
         ));
+        $settings->add(new admin_setting_configcheckbox(
+            'local_proxmoxvm/setpassword',
+            get_string('setpassword', 'local_proxmoxvm'),
+            get_string('setpassword_desc', 'local_proxmoxvm'),
+            0
+        ));
         $settings->add(new admin_setting_configtext(
             'local_proxmoxvm/snapshotquota',
             get_string('snapshotquota', 'local_proxmoxvm'),

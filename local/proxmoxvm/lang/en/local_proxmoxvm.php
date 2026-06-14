@@ -152,3 +152,10 @@ $string['consolewspath'] = 'Console websocket path';
 $string['consolewspath_desc'] = 'Same-origin path that your web server reverse-proxies to the Proxmox vncwebsocket endpoint (injecting the API token). Must match your web server configuration. Default: /pvews';
 $string['errorconsoledisabled'] = 'The integrated console is disabled.';
 $string['openconsole'] = 'Open console';
+
+// Per-VM password.
+$string['field_password'] = 'Password';
+$string['privacy:metadata:local_proxmoxvm:cipassword'] = 'The VM password (stored encrypted).';
+$string['setpassword'] = 'Set a unique password per VM';
+$string['setpassword_desc'] = 'On creation, set a unique random password via cloud-init (replaces the template default) and show it to the student. Requires cloud-init templates with a default user (ciuser) and SSH password authentication enabled in the guest.';
+$string['showpassword'] = 'Show password';
