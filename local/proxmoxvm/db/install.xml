@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<XMLDB PATH="local/proxmoxvm/db" VERSION="20260614" COMMENT="XMLDB file for local_proxmoxvm"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:noNamespaceSchemaLocation="../../../lib/xmldb/xmldb.xsd"
+>
+  <TABLES>
+    <TABLE NAME="local_proxmoxvm" COMMENT="Maps Moodle users to their provisioned Proxmox VMs.">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="Owner of the VM."/>
+        <FIELD NAME="vmid" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false" COMMENT="Proxmox VMID once cloned."/>
+        <FIELD NAME="node" TYPE="char" LENGTH="64" NOTNULL="false" SEQUENCE="false" COMMENT="Proxmox node hosting the VM."/>
+        <FIELD NAME="template" TYPE="char" LENGTH="64" NOTNULL="false" SEQUENCE="false" COMMENT="Source template VMID."/>
+        <FIELD NAME="name" TYPE="char" LENGTH="128" NOTNULL="false" SEQUENCE="false" COMMENT="VM name in Proxmox."/>
+        <FIELD NAME="origin" TYPE="char" LENGTH="16" NOTNULL="true" DEFAULT="auto" SEQUENCE="false" COMMENT="auto (cohort) or manual (teacher)."/>
+        <FIELD NAME="createdby" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false" COMMENT="Teacher who created a manual VM."/>
+        <FIELD NAME="provisionstate" TYPE="char" LENGTH="32" NOTNULL="true" DEFAULT="pending" SEQUENCE="false" COMMENT="pending|provisioning|ready|error|deprovisioning."/>
+        <FIELD NAME="status" TYPE="char" LENGTH="32" NOTNULL="false" SEQUENCE="false" COMMENT="Cached power status (running|stopped)."/>
+        <FIELD NAME="ipaddress" TYPE="char" LENGTH="64" NOTNULL="false" SEQUENCE="false" COMMENT="Cached guest-agent IPv4."/>
+        <FIELD NAME="statuschecked" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false" COMMENT="Last status refresh time."/>
+        <FIELD NAME="lasterror" TYPE="text" NOTNULL="false" SEQUENCE="false" COMMENT="Last provisioning error message."/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="userid" TYPE="foreign" FIELDS="userid" REFTABLE="user" REFFIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="vmid" UNIQUE="false" FIELDS="vmid"/>
+        <INDEX NAME="provisionstate" UNIQUE="false" FIELDS="provisionstate"/>
+      </INDEXES>
+    </TABLE>
+  </TABLES>
+</XMLDB>

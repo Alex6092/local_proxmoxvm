@@ -1,0 +1,149 @@
+{{!
+    This file is part of the local_proxmoxvm plugin for Moodle.
+
+    @template local_proxmoxvm/dashboard
+
+    Renders the user's VM dashboard.
+
+    Context variables required for this template:
+    * hasvm boolean
+    * vms array of VM objects
+    * sesskey string
+    * actionurl string
+    * canmanage boolean
+    * manageurl string
+}}
+<div class="local-proxmoxvm-dashboard">
+    {{#canmanage}}
+        <div class="mb-3">
+            <a class="btn btn-outline-secondary" href="{{manageurl}}">{{#str}}managevms, local_proxmoxvm{{/str}}</a>
+        </div>
+    {{/canmanage}}
+
+    {{^hasvm}}
+        <div class="alert alert-info">{{#str}}novm, local_proxmoxvm{{/str}}</div>
+    {{/hasvm}}
+
+    {{#vms}}
+        <div class="card mb-3">
+            <div class="card-body">
+                <h3 class="card-title d-flex align-items-center gap-2">
+                    <span>{{name}}</span>
+                    <span class="{{badgeclass}}">{{statuslabel}}</span>
+                </h3>
+
+                {{#ispending}}
+                    <div class="alert alert-warning">{{#str}}vmpending, local_proxmoxvm{{/str}}</div>
+                {{/ispending}}
+
+                {{#iserror}}
+                    <div class="alert alert-danger">
+                        {{#str}}vmerror, local_proxmoxvm{{/str}}
+                        {{#lasterror}}<pre class="mt-2 mb-0">{{lasterror}}</pre>{{/lasterror}}
+                    </div>
+                {{/iserror}}
+
+                {{#isready}}
+                    <dl class="row">
+                        <dt class="col-sm-3">{{#str}}field_vmid, local_proxmoxvm{{/str}}</dt>
+                        <dd class="col-sm-9">{{vmid}} <span class="text-muted">({{node}})</span></dd>
+
+                        <dt class="col-sm-3">{{#str}}field_ip, local_proxmoxvm{{/str}}</dt>
+                        <dd class="col-sm-9">
+                            {{#hasip}}<code>{{ip}}</code>{{/hasip}}
+                            {{^hasip}}<span class="text-muted">{{#str}}ipunknown, local_proxmoxvm{{/str}}</span>{{/hasip}}
+                        </dd>
+
+                        {{#sshhint}}
+                            <dt class="col-sm-3">{{#str}}field_ssh, local_proxmoxvm{{/str}}</dt>
+                            <dd class="col-sm-9"><code>{{sshhint}}</code></dd>
+                        {{/sshhint}}
+                    </dl>
+
+                    <form method="post" action="{{actionurl}}" class="d-inline">
+                        <input type="hidden" name="sesskey" value="{{sesskey}}">
+                        <input type="hidden" name="id" value="{{id}}">
+                        {{^isrunning}}
+                            <button class="btn btn-success" name="action" value="start">{{#str}}action_start, local_proxmoxvm{{/str}}</button>
+                        {{/isrunning}}
+                        {{#isrunning}}
+                            <button class="btn btn-danger" name="action" value="stop">{{#str}}action_stop, local_proxmoxvm{{/str}}</button>
+                            <button class="btn btn-warning" name="action" value="reboot">{{#str}}action_reboot, local_proxmoxvm{{/str}}</button>
+                        {{/isrunning}}
+                    </form>
+
+                    {{#canreset}}
+                        <div class="mt-3">
+                            <form method="post" action="{{actionurl}}" class="d-inline">
+                                <input type="hidden" name="sesskey" value="{{sesskey}}">
+                                <input type="hidden" name="id" value="{{id}}">
+                                <button class="btn btn-outline-warning" name="action" value="reset">{{#str}}resetvm, local_proxmoxvm{{/str}}</button>
+                            </form>
+                            <div class="form-text">{{#str}}resetvm_help, local_proxmoxvm{{/str}}</div>
+                        </div>
+                    {{/canreset}}
+
+                    <hr>
+                    <h4>{{#str}}snapshots, local_proxmoxvm{{/str}}</h4>
+
+                    {{#snaperror}}
+                        <div class="alert alert-warning">{{snaperror}}</div>
+                    {{/snaperror}}
+
+                    {{#hassnapshots}}
+                        <table class="table table-sm align-middle">
+                            <thead>
+                                <tr>
+                                    <th>{{#str}}snapshotname, local_proxmoxvm{{/str}}</th>
+                                    <th>{{#str}}field_description, local_proxmoxvm{{/str}}</th>
+                                    <th class="text-end"></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {{#snapshots}}
+                                    <tr>
+                                        <td><code>{{name}}</code></td>
+                                        <td>{{description}}</td>
+                                        <td class="text-end">
+                                            <form method="post" action="{{actionurl}}" class="d-inline">
+                                                <input type="hidden" name="sesskey" value="{{sesskey}}">
+                                                <input type="hidden" name="id" value="{{id}}">
+                                                <input type="hidden" name="snapname" value="{{name}}">
+                                                <button class="btn btn-sm btn-outline-primary" name="action" value="snapshotrollback">{{#str}}rollback, local_proxmoxvm{{/str}}</button>
+                                                <button class="btn btn-sm btn-outline-danger" name="action" value="snapshotdelete">{{#str}}deletesnapshot, local_proxmoxvm{{/str}}</button>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                {{/snapshots}}
+                            </tbody>
+                        </table>
+                    {{/hassnapshots}}
+
+                    {{^hassnapshots}}
+                        {{^snaperror}}<p class="text-muted">{{#str}}nosnapshots, local_proxmoxvm{{/str}}</p>{{/snaperror}}
+                    {{/hassnapshots}}
+
+                    {{#quotareached}}
+                        <div class="alert alert-info">{{#str}}quotareached, local_proxmoxvm{{/str}}</div>
+                    {{/quotareached}}
+
+                    {{^quotareached}}
+                        <form method="post" action="{{actionurl}}" class="mt-2">
+                            <input type="hidden" name="sesskey" value="{{sesskey}}">
+                            <input type="hidden" name="id" value="{{id}}">
+                            <input type="hidden" name="action" value="snapshotcreate">
+                            <div class="input-group" style="max-width:40rem;">
+                                <input type="text" class="form-control" name="snapname"
+                                    placeholder="{{#str}}snapshotname, local_proxmoxvm{{/str}}"
+                                    maxlength="40" required>
+                                <input type="text" class="form-control" name="snapdesc"
+                                    placeholder="{{#str}}field_description, local_proxmoxvm{{/str}}">
+                                <button class="btn btn-primary" type="submit">{{#str}}createsnapshot, local_proxmoxvm{{/str}}</button>
+                            </div>
+                        </form>
+                    {{/quotareached}}
+                {{/isready}}
+            </div>
+        </div>
+    {{/vms}}
+</div>
