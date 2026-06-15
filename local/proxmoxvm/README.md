@@ -3,9 +3,10 @@
 Plugin Moodle (`local`) qui provisionne une machine virtuelle Proxmox par étudiant
 et lui en donne le contrôle. Développé pour **Moodle 5.2+** et **Proxmox VE 6.4+**.
 
-> État : **M1 — backend & cycle de vie**. Le provisionnement, la suppression et la
-> logique de contrôle (allumage, snapshots…) existent côté serveur. L'**interface
-> utilisateur** (page + icône navbar) arrive en **M2**, la **console intégrée** en **M3**.
+> État : **M1 + M2 + M3 complets** (v0.4.0). Provisionnement par cohorte (clone lié,
+> nœud le moins chargé, async), espace utilisateur (icône navbar, statut/IP/SSH/mot de
+> passe, allumage/arrêt/redémarrage, snapshots, réinitialisation à l'état initial),
+> console noVNC intégrée, et mot de passe unique chiffré par VM.
 
 ## Ce que fait le M1
 
@@ -21,17 +22,70 @@ et lui en donne le contrôle. Développé pour **Moodle 5.2+** et **Proxmox VE 6
 
 ## Prérequis côté Proxmox
 
-### 1. Templates (un par nœud)
+### 1. Templates cloud-init (un par nœud)
 
-Sur chaque nœud pouvant héberger des VM, préparez un template :
+Chaque nœud pouvant héberger des VM a besoin de **son propre** template (les clones liés ne
+changent pas de nœud), idéalement **cloud-init** (pour l'IP en DHCP et le mot de passe unique
+par VM). Recette à partir d'une image cloud officielle :
 
-- **`qemu-guest-agent` installé et activé** dans l'OS invité (indispensable pour
-  remonter l'IP et faire les arrêts propres). Le plugin force `agent: 1` au clonage.
-- Stocké sur du **LVM-Thin** (ou un autre stockage compatible **clones liés**).
-- Converti en template : `qm template <vmid>`.
-- Serveur **SSH** opérationnel + un moyen pour l'étudiant de s'authentifier
-  (cloud-init avec utilisateur/clé, ou compte pré-installé).
-- ⚠️ Les clones liés ne **changent pas de nœud** : chaque nœud a donc son propre template.
+```bash
+# Sur le nœud : récupérer une image cloud (cloud-init déjà inclus)
+cd /var/lib/vz/template
+wget https://cloud.debian.org/images/cloud/bookworm/latest/debian-12-genericcloud-amd64.qcow2
+
+# (recommandé) installer le guest agent + autoriser le SSH par mot de passe DANS l'image
+apt install -y libguestfs-tools
+virt-customize -a debian-12-genericcloud-amd64.qcow2 \
+  --install qemu-guest-agent \
+  --run-command 'sed -i "s/^#\?PasswordAuthentication.*/PasswordAuthentication yes/" /etc/ssh/sshd_config'
+
+# Assembler la VM (VMID libre, ex. 9000)
+qm create 9000 --name debian12-ci --memory 1024 --cores 1 \
+  --net0 virtio,bridge=vmbr0 --ostype l26 --agent enabled=1 --scsihw virtio-scsi-pci
+qm importdisk 9000 debian-12-genericcloud-amd64.qcow2 local-lvm
+qm set 9000 --scsi0 local-lvm:vm-9000-disk-0
+qm set 9000 --boot order=scsi0       # commande séparée : le disque doit exister AVANT le boot order
+qm set 9000 --ide2 local-lvm:cloudinit
+qm set 9000 --ciuser debian          # PAS de --cipassword : le plugin le pose par VM
+qm set 9000 --ipconfig0 ip=dhcp      # IP en DHCP, remontée ensuite par le guest agent
+```
+
+Puis **deux cas selon la taille de disque voulue** :
+
+**A. La taille native de l'image suffit (~3 Go) — le plus simple** : convertir directement,
+sans démarrer.
+```bash
+qm template 9000
+```
+
+**B. Tu veux un disque plus grand (ex. 10 Go)** : redimensionner **PUIS démarrer une fois**
+pour que cloud-init agrandisse la partition et répare la table GPT, puis réinitialiser
+cloud-init, puis convertir.
+```bash
+qm resize 9000 scsi0 10G
+qm start 9000
+sleep 60                                       # laisser cloud-init agrandir/réparer le disque
+qm guest exec 9000 -- cloud-init clean --logs  # remet cloud-init à zéro → les clones le rejoueront
+qm shutdown 9000 --timeout 60
+qm template 9000
+```
+
+> ⚠️ **Ne JAMAIS faire `qm resize` puis `qm template` sans démarrer entre les deux.** Le disque
+> se retrouve agrandi mais avec une **table GPT incohérente** (header de secours resté à
+> l'ancienne taille — `GPT: Alternate GPT header not at the end of the disk`). Les clones
+> héritent de ce GPT cassé et **paniquent au boot de façon intermittente**
+> (`Attempted to kill init!`). Le démarrage + `cloud-init clean` produit un disque propre.
+
+**À retenir :**
+- `qemu-guest-agent` installé + `--agent enabled=1` → remontée de l'IP et arrêts propres.
+- Stockage **LVM-Thin** (ou autre compatible **clones liés**).
+- `--ciuser` doit correspondre au réglage *Nom d'utilisateur SSH* du plugin (ex. `debian`).
+- **Vérifier un template avant de s'en servir** : clone-le une fois en VM normale, démarre-la
+  3-4 fois → aucun kernel panic.
+- Mets le VMID du template dans le mapping du plugin pour ce nœud (`proxmox5|9000|local-lvm`).
+- Pour **réparer un template existant** sans repartir de zéro : reconstruis-en un avec un
+  **nouveau VMID** (la recette ci-dessus) et pointe le mapping dessus — inutile de toucher au
+  template cassé (Proxmox refuse de le supprimer tant qu'il a des clones liés).
 
 ### 2. Utilisateur et jeton d'API (moindre privilège)
 
