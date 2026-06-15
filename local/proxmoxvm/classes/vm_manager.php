@@ -152,9 +152,26 @@ class vm_manager {
                     throw new \moodle_exception('errornocapacity', 'local_proxmoxvm');
                 }
 
-                $newid = $client->get_next_vmid();
+                // Allocate the VMID and clone under a cluster-wide lock: two
+                // concurrent provisions must not grab the same VMID, because
+                // /cluster/nextid is not atomic. The VMID is written to the record
+                // ONLY after a successful clone, so a failed clone can never make a
+                // retry "adopt" another user's VM.
                 $name = self::build_vm_name($record->userid);
+                $lockfactory = \core\lock\lock_config::get_lock_factory('local_proxmoxvm');
+                $lock = $lockfactory->get_lock('provision', 120, 600);
+                if (!$lock) {
+                    throw new \moodle_exception('errorlock', 'local_proxmoxvm');
+                }
+                try {
+                    $newid = $client->get_next_vmid();
+                    $upid = $client->clone_vm($choice->node, $choice->templateid, $newid, $name);
+                    $client->wait_for_task($choice->node, $upid, 300);
+                } finally {
+                    $lock->release();
+                }
 
+                // Clone succeeded: it is now safe to persist the VMID.
                 $record->node = $choice->node;
                 $record->template = (string) $choice->templateid;
                 $record->vmid = $newid;
@@ -162,9 +179,6 @@ class vm_manager {
                 $record->provisionstate = self::STATE_PROVISIONING;
                 $record->timemodified = time();
                 $DB->update_record(self::TABLE, $record);
-
-                $upid = $client->clone_vm($choice->node, $choice->templateid, $newid, $name);
-                $client->wait_for_task($choice->node, $upid, 300);
             }
 
             // Step 2: configure resources and ensure the guest agent is on.

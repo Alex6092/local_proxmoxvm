@@ -25,7 +25,7 @@
 defined('MOODLE_INTERNAL') || die();
 
 $plugin->component = 'local_proxmoxvm';
-$plugin->version   = 2026061504;        // YYYYMMDDXX.
+$plugin->version   = 2026061505;        // YYYYMMDDXX.
 $plugin->requires  = 2026042000;        // Moodle 5.2 (branch 502).
 $plugin->maturity  = MATURITY_ALPHA;
-$plugin->release   = '0.4.0 (unique per-VM cloud-init password)';
+$plugin->release   = '0.4.1 (fix concurrent VMID race)';

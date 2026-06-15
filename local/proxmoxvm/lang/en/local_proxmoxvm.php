@@ -39,6 +39,7 @@ $string['enableconsole'] = 'Enable integrated console';
 $string['enableconsole_desc'] = 'Allow users to open the noVNC console of their VM from within Moodle (requires the browser to reach the Proxmox host).';
 $string['errorapi'] = 'Proxmox API error: {$a}';
 $string['errorconnection'] = 'Could not connect to the Proxmox API: {$a}';
+$string['errorlock'] = 'Could not acquire the provisioning lock; the task will be retried.';
 $string['errornocapacity'] = 'No Proxmox node currently has enough free memory to host a new VM.';
 $string['errornotconfigured'] = 'The Proxmox VM plugin is not configured (host, token ID and secret are required).';
 $string['errorsnapquota'] = 'Snapshot limit reached ({$a} maximum). Delete an existing snapshot first.';

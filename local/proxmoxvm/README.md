@@ -64,8 +64,10 @@ cloud-init, puis convertir.
 ```bash
 qm resize 9000 scsi0 10G
 qm start 9000
-sleep 60                                       # laisser cloud-init agrandir/réparer le disque
-qm guest exec 9000 -- cloud-init clean --logs  # remet cloud-init à zéro → les clones le rejoueront
+sleep 60                                              # cloud-init agrandit/répare le disque
+qm guest exec 9000 -- cloud-init clean --logs         # remet cloud-init à zéro
+qm guest exec 9000 -- truncate -s 0 /etc/machine-id   # machine-id vide → unique par clone
+qm guest exec 9000 -- rm -f /var/lib/dbus/machine-id
 qm shutdown 9000 --timeout 60
 qm template 9000
 ```
@@ -75,6 +77,11 @@ qm template 9000
 > l'ancienne taille — `GPT: Alternate GPT header not at the end of the disk`). Les clones
 > héritent de ce GPT cassé et **paniquent au boot de façon intermittente**
 > (`Attempted to kill init!`). Le démarrage + `cloud-init clean` produit un disque propre.
+>
+> ⚠️ **Si tu démarres le template, vide `/etc/machine-id` avant de le convertir** (ligne
+> `truncate` ci-dessus). Sinon tous les clones héritent du **même machine-id**, et comme
+> systemd l'utilise comme identifiant client DHCP, ils obtiennent **tous la même IP** — même
+> avec des adresses MAC différentes. (Le cas A, sans démarrage, n'a pas ce souci.)
 
 **À retenir :**
 - `qemu-guest-agent` installé + `--agent enabled=1` → remontée de l'IP et arrêts propres.
